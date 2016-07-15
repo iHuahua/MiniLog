@@ -18,19 +18,22 @@
  *  __MINILOG_NAMESPACE__
  *      命名空间定义，启用命名空间时日志库所在的命名空间，默认 Huahua，可自行修改
  */
-#define __MINILOG_USING_NAMESPACE__ 1
+#define __MINILOG_USING_NAMESPACE__ 0
 #define __MINILOG_NAMESPACE__ Huahua
 
+
 #if defined(__MINILOG_USING_NAMESPACE__) && (__MINILOG_USING_NAMESPACE__)
-#define __MINILOG_NS_BEGIN__ namespace __MINILOG_NAMESPACE__ {
+#define __MINILOG_NS__ __MINILOG_NAMESPACE__
+#define __MINILOG_NS_BEGIN__ namespace __MINILOG_NS__ {
 #define __MINILOG_NS_END__ }
 #else
+#define __MINILOG_NS__
 #define __MINILOG_NS_BEGIN__
 #define __MINILOG_NS_END__
 #endif
 
 
-
+#include <string>
 
 
 __MINILOG_NS_BEGIN__
@@ -50,34 +53,72 @@ enum MiniLogConfig {
     
     /* message format */
     MLC_FMT_DATETIME = 0x2001,
+	/* no supported yet */
     MLC_FMT_ERRORSTACK,
     MLC_FMT_COLOR
 };
 
-
-
-class MiniLog {
-public:
-    static bool Init();
-};
-
-class MiniMessage {
+typedef struct MiniMessage {
     MiniLogLevel m_Level;
+       
     
-    
+} MiniMessage;
+
+/*
+ * MiniLog entry.
+*/
+typedef struct IMiniLog {
 public:
+    static IMiniLog * GetInstance();
     
-};
+	virtual void SetConfig(const MiniLogConfig config) = 0;
+	virtual void SetLogPath(const char* path) = 0;
+	virtual bool Start() = 0;
+	virtual void Stop() = 0;
 
-class IMiniLogMgr {
+	virtual bool GetEnable() = 0;
 
-
-public:
-    static IMiniLogMgr * GetInstance();
-    
-	void SetConfig(MiniLogConfig config);
-};
+	virtual void PushMessage(
+		MiniLogLevel level,
+		const char *file,
+		const int line,
+		const std::string &message
+	) = 0;
+} IMiniLog;
 
 __MINILOG_NS_END__
+
+
+/*
+void __function(MiniLogLevel level, const char *fmt, ...) {
+	do {
+		if (!__MINILOG_NS__::IMiniLog::GetInstance()->GetEnable()) break;
+		int __ml_length = snprintf(0, 0, fmt, "##__VA_ARGS__") + 1;
+		char *__ml_message = new char[__ml_length];
+		__ml_length = snprintf(__ml_message, __ml_length, fmt, "##__VA_ARGS__");
+		std::string __ml_message_fmt(__ml_message);
+		delete __ml_message;
+		__MINILOG_NS__::IMiniLog::GetInstance()->PushMessage(
+			level, __FILE__, __LINE__, __ml_message_fmt);
+	} while (0);
+}
+*/
+#define LOGFMT(level, fmt, ...) \
+		do { \
+			if (!__MINILOG_NS__::IMiniLog::GetInstance()->GetEnable()) break; \
+			int __ml_length = snprintf(0, 0, fmt, ##__VA_ARGS__) + 1; \
+			char *__ml_message = new char[__ml_length]; \
+			__ml_length = snprintf(__ml_message, __ml_length, fmt, ##__VA_ARGS__); \
+			std::string __ml_message_fmt(__ml_message); \
+			delete __ml_message; \
+			__MINILOG_NS__::IMiniLog::GetInstance()->PushMessage( \
+			level, __FILE__, __LINE__, __ml_message_fmt); \
+		} while (0)
+
+#define LOGT(fmt, ...) LOGFMT(__MINILOG_NS__::MLL_TRACE, fmt, ##__VA_ARGS__)
+#define LOGD(fmt, ...) LOGFMT(__MINILOG_NS__::MLL_DEBUG, fmt, ##__VA_ARGS__)
+#define LOGI(fmt, ...) LOGFMT(__MINILOG_NS__::MLL_INFO,  fmt, ##__VA_ARGS__)
+#define LOGW(fmt, ...) LOGFMT(__MINILOG_NS__::MLL_WARN,  fmt, ##__VA_ARGS__)
+#define LOGE(fmt, ...) LOGFMT(__MINILOG_NS__::MLL_ERROR, fmt, ##__VA_ARGS__)
 
 #endif //!__MINILOG_HPP__
