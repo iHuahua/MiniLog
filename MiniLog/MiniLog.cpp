@@ -14,11 +14,15 @@ __MINILOG_NS_BEGIN__
 
 
 IMiniLogMgr * __init__ = nullptr;
-IMiniLogMgr * IMiniLogMgr::getInstance() {
+IMiniLogMgr * IMiniLogMgr::GetInstance() {
     if (__init__ == nullptr) {
         __init__ = new IMiniLogMgr;
     }
     return __init__;
+}
+
+void IMiniLogMgr::SetConfig(MiniLogConfig)
+{
 }
 
 bool MiniLog::Init() {
