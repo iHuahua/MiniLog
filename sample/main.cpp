@@ -55,6 +55,8 @@ void test2() {
 
 int main(int argc, const char * argv[]) {
     // insert code here...
+	IMiniLog::GetInstance()->Start();
+
 	LOGT("TRACK %d", 123);
 	LOGD("DEBUG %s", "fuck u");
 	LOGI("INFO %0.03f", 123.0);

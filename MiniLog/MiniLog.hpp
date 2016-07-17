@@ -48,41 +48,39 @@ enum MiniLogLevel {
 
 enum MiniLogConfig {
     /* output target */
-    MLC_OPT_FILE = 0x1001,
-    MLC_OPT_CONSOLE,
+    MLC_OPT_FILE		= 0x1001,
+    MLC_OPT_CONSOLE		= 0x1002,
     
     /* message format */
-    MLC_FMT_DATETIME = 0x2001,
+    MLC_FMT_DATETIME	= 0x2001,
+	MLC_FMT_LEVEL		= 0x2002,
+	MLC_FMT_FILELINE	= 0x2004,
+    MLC_FMT_COLOR		= 0x2008,
 	/* no supported yet */
-    MLC_FMT_ERRORSTACK,
-    MLC_FMT_COLOR
+    MLC_FMT_ERRORSTACK	= 0x200F
 };
-
-typedef struct MiniMessage {
-    MiniLogLevel m_Level;
-       
-    
-} MiniMessage;
 
 /*
  * MiniLog entry.
 */
-typedef struct IMiniLog {
+typedef class IMiniLog {
 public:
     static IMiniLog * GetInstance();
+	virtual ~IMiniLog() { }
     
-	virtual void SetConfig(const MiniLogConfig config) = 0;
-	virtual void SetLogPath(const char* path) = 0;
+	virtual void SetConfig(const MiniLogConfig &config) = 0;
+	virtual void SetLogPath(const std::string &path) = 0;
 	virtual bool Start() = 0;
 	virtual void Stop() = 0;
 
+	virtual void SetEnable(bool) = 0;
 	virtual bool GetEnable() = 0;
 
 	virtual void PushMessage(
 		MiniLogLevel level,
-		const char *file,
+		const std::string &file,
 		const int line,
-		const std::string &message
+		const std::string &body
 	) = 0;
 } IMiniLog;
 
