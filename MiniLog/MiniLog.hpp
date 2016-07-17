@@ -48,16 +48,16 @@ enum MiniLogLevel {
 
 enum MiniLogConfig {
     /* output target */
-    MLC_OPT_FILE		= 0x1001,
-    MLC_OPT_CONSOLE		= 0x1002,
+    MLC_OPT_FILE		= 0x0001,
+    MLC_OPT_CONSOLE		= 0x0002,
     
     /* message format */
-    MLC_FMT_DATETIME	= 0x2001,
-	MLC_FMT_LEVEL		= 0x2002,
-	MLC_FMT_FILELINE	= 0x2004,
-    MLC_FMT_COLOR		= 0x2008,
+    MLC_FMT_DATETIME	= 0x0100,
+	MLC_FMT_LEVEL		= 0x0200,
+	MLC_FMT_FILELINE	= 0x0400,
+    MLC_FMT_COLOR		= 0x0800,
 	/* no supported yet */
-    MLC_FMT_ERRORSTACK	= 0x200F
+    MLC_FMT_ERRORSTACK	= 0x1000
 };
 
 /*

@@ -166,6 +166,7 @@ public:
 		}
 
 		AddShutdownInfo();
+		m_Running = false;
 		ThreadLaunch::Stop();
 	}
 
@@ -280,7 +281,7 @@ private:
 			while (PopMessage(message))
 			{
 				// TODO
-				printf(message->content.c_str());
+				printf("%s\n", message->content.c_str());
 				DeleteMessage(message);
 			}
 

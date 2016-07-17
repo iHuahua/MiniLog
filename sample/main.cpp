@@ -62,6 +62,7 @@ int main(int argc, const char * argv[]) {
 	LOGI("INFO %0.03f", 123.0);
 	LOGW("WARN %d", 123);
 	LOGE("ERROR %d", 123);
+	IMiniLog::GetInstance()->Stop();
 
 	system("PAUSE");
     return 0;
