@@ -15,6 +15,7 @@
 #include <Windows.h>
 #include <process.h>
 #else 
+#include <pthread.h>
 #endif // _WIN32
 
 /*
@@ -60,35 +61,38 @@ static const char *FormatCombine = "%s%s";
 class Utility {
 public:
 	static string GetCurrentDateTimeString() {
-		return "2015/07/17 18:57:10.996";
+		return "2016/07/17 18:57:10.996";
 	}
 };
 
 class ThreadLaunch
 {
-	unsigned long long m_ThreadID;
+#if defined(_WIN32)
+	unsigned m_ThreadID;
+#else
+    pthread_t m_ThreadID;
+#endif
 public:
 	ThreadLaunch() : m_ThreadID(0) { }
 	virtual ~ThreadLaunch() { }
 	virtual void Run() = 0;
 
 	bool Start() {
-		unsigned long long tid = 0;
 #if defined(_WIN32)
-		tid = _beginthreadex(0, 0, ThreadProc, (void *)this, 0, NULL);
+		unsigned tid = _beginthreadex(0, 0, ThreadProc, (void *)this, 0, NULL);
 		if (tid == -1 || tid == 0) {
 			std::cerr << "[MiniLog] create thread failed\n";
 			return false;
 		}
+		m_ThreadID = tid;
 #else
-		int ret = pthread_create(&tid, NULL, ThreadProc, (void*)this);
+		int ret = pthread_create(&m_ThreadID, NULL, ThreadProc, (void*)this);
 		if (ret != 0) {
 			std::cerr << "[MiniLog] create thread failed\n";
 			return false;
 		}
 #endif // defined(_WIN32)
 
-		m_ThreadID = tid;
 		return true;
 	}
 

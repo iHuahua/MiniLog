@@ -108,7 +108,7 @@ void __function(MiniLogLevel level, const char *fmt, ...) {
 			char *__ml_message = new char[__ml_length]; \
 			__ml_length = snprintf(__ml_message, __ml_length, fmt, ##__VA_ARGS__); \
 			std::string __ml_message_fmt(__ml_message); \
-			delete __ml_message; \
+			delete[] __ml_message; \
 			__MINILOG_NS__::IMiniLog::GetInstance()->PushMessage( \
 			level, __FILE__, __LINE__, __ml_message_fmt); \
 		} while (0)
