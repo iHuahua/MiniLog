@@ -112,7 +112,7 @@ public:
         time_t now;
         struct tm *timenow;
         time(&now);                    //time函数读取现在的时间(国际标准时间非北京时间)，然后传值给now
-        timenow = localtime(&now);    //localtime函数把从time取得的时间now换算成你电脑中的时间(就是你设置的地区)
+        timenow = localtime(&now);     //localtime函数把从time取得的时间now换算成你电脑中的时间(就是你设置的地区)
         
         stTime.wYear        = 1900 + timenow->tm_year;
         stTime.wMonth       = 1 + timenow->tm_mon;
@@ -224,7 +224,7 @@ public:
         return false;
     }
     
-    virtual bool ProcMessage(MiniMessage * msg) {
+    virtual bool ProcMessage(MiniMessage * msg) override {
         return true;
     }
 };
@@ -244,7 +244,7 @@ public:
         return true;
     }
     
-    virtual bool ProcMessage(MiniMessage * msg);
+    virtual bool ProcMessage(MiniMessage * msg) override;
 };
 
 class MiniLog : public IMiniLog, public ThreadLaunch
