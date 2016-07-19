@@ -16,9 +16,20 @@
 #if defined(_WIN32)
 #include <Windows.h>
 #include <process.h>
-#else 
+#else //__linux__
+#include <unistd.h>
 #include <pthread.h>
+#include <sys/time.h>
+#include <semaphore.h>
 #endif // _WIN32
+
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#include <dispatch/dispatch.h>
+#if !TARGET_OS_IPHONE
+#include <libproc.h>
+#endif
+#endif //__APPLE__
 
 /*
  *	Cross platform Macro
@@ -29,7 +40,7 @@ typedef unsigned thread_return_t;
 #else
 #define MLCALLAPI
 typedef void * thread_return_t;
-#endif // defined(_WIN32)
+#endif // _WIN32
 
 
 
@@ -81,59 +92,135 @@ static const char *MiniLogLevelColor[] =
 #endif
 
 
+class DateTime
+{
+public:
+    uint16_t Year;
+    uint16_t Month;
+    uint16_t DayOfWeek;	//!< 0=星期日，1=星期一...
+    uint16_t Day;
+    uint16_t Hour;
+    uint16_t Minute;
+    uint16_t Second;
+    uint16_t MilliSecond;
+    
+public:
+    string ToString() {
+        char message[24] = { 0 };
+        snprintf(message, sizeof(message), "%d/%02d/%02d %02d:%02d:%02d.%03d",
+                 Year, Month, Day, Hour, Minute, Second, MilliSecond);
+        return message;
+    }
+};
 
 class Utility
 {
 public:
-    typedef struct DateTime
-    {
-        uint16_t wYear;
-        uint16_t wMonth;
-        uint16_t wDayOfWeek;	//!< 0=星期日，1=星期一...
-        uint16_t wDay;
-        uint16_t wHour;
-        uint16_t wMinute;
-        uint16_t wSecond;
-    } DateTime;
     
     static DateTime GetCurrentTime() {
         DateTime stTime;
-#if  defined(WIN32) || defined(WINCE)
+#if  defined(WIN32)
         SYSTEMTIME t_time;
         GetLocalTime(&t_time);
-        stTime.wYear        = t_time.wYear;
-        stTime.wMonth       = t_time.wMonth;
-        stTime.wDayOfWeek   = t_time.wDayOfWeek;
-        stTime.wDay         = t_time.wDay;
-        stTime.wHour        = t_time.wHour;
-        stTime.wMinute      = t_time.wMinute;
-        stTime.wSecond      = t_time.wSecond;
+        stTime.Year        = t_time.wYear;
+        stTime.Month       = t_time.wMonth;
+        stTime.DayOfWeek   = t_time.wDayOfWeek;
+        stTime.Day         = t_time.wDay;
+        stTime.Hour        = t_time.wHour;
+        stTime.Minute      = t_time.wMinute;
+        stTime.Second      = t_time.wSecond;
 #else    // for linux
         time_t now;
         struct tm *timenow;
-        time(&now);                    //time函数读取现在的时间(国际标准时间非北京时间)，然后传值给now
-        timenow = localtime(&now);     //localtime函数把从time取得的时间now换算成你电脑中的时间(就是你设置的地区)
+        struct timeval tv;
+        time(&now);
+        gettimeofday(&tv, NULL);
+        timenow = localtime(&now);
         
-        stTime.wYear        = 1900 + timenow->tm_year;
-        stTime.wMonth       = 1 + timenow->tm_mon;
-        stTime.wDayOfWeek   = timenow->tm_wday;
-        stTime.wDay         = timenow->tm_mday;
-        stTime.wHour        = timenow->tm_hour;
-        stTime.wMinute      = timenow->tm_min;
-        stTime.wSecond      = timenow->tm_sec;
-#endif    // defined(WIN32) || defined(WINCE)
+        stTime.Year        = 1900 + timenow->tm_year;
+        stTime.Month       = 1 + timenow->tm_mon;
+        stTime.DayOfWeek   = timenow->tm_wday;
+        stTime.Day         = timenow->tm_mday;
+        stTime.Hour        = timenow->tm_hour;
+        stTime.Minute      = timenow->tm_min;
+        stTime.Second      = timenow->tm_sec;
+        stTime.MilliSecond = tv.tv_usec / 1000;
+#endif    // defined(WIN32)
         return stTime;
     }
     
-    static string GetCurrentTimeString() {
-        // TODO
-		return "2016/07/17 18:57:10.996";
-	}
-    
     static void Sleep(uint32_t ms) {
-        
+#if defined(_WIN32)
+        Sleep(ms);
+#else
+        usleep(ms * 1000);
+#endif
     }
 };
+
+class Locker
+{
+#ifdef _WIN32
+    CRITICAL_SECTION _crit;
+#else
+    pthread_mutex_t  _crit;
+#endif
+    bool m_Locked;
+public:
+    Locker() : m_Locked(false) {
+#ifdef _WIN32
+        InitializeCriticalSection(&_crit);
+#else
+        //_crit = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+        pthread_mutexattr_t attr;
+        pthread_mutexattr_init(&attr);
+        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+        pthread_mutex_init(&_crit, &attr);
+        pthread_mutexattr_destroy(&attr);
+#endif
+    }
+    
+    virtual ~Locker() {
+#ifdef _WIN32
+        DeleteCriticalSection(&_crit);
+#else
+        pthread_mutex_destroy(&_crit);
+#endif
+    }
+    
+    void Lock() {
+#ifdef _WIN32
+            EnterCriticalSection(&_crit);
+#else
+            pthread_mutex_lock(&_crit);
+#endif
+        m_Locked = true;
+    }
+    
+    void Unlock() {
+#ifdef _WIN32
+        LeaveCriticalSection(&_crit);
+#else
+        pthread_mutex_unlock(&_crit);
+#endif
+        m_Locked = false;
+    }
+    
+    bool Locked() {
+        return m_Locked;
+    }
+};
+
+class AutoLocker {
+public:
+    explicit AutoLocker(Locker & lk) :_lock(lk) { _lock.Lock(); }
+    ~AutoLocker() { if (Locked()) Unlock(); }
+    void Unlock() { _lock.Unlock(); }
+    bool Locked() { return _lock.Locked(); }
+private:
+    Locker & _lock;
+};
+#define lock(obj) for (AutoLocker _lock(obj); _lock.Locked(); _lock.Unlock())
 
 class ThreadLaunch
 {
@@ -192,6 +279,7 @@ class MiniMessage
 {
 public:
 	MiniLogLevel m_Level;
+    DateTime m_DateTime;
 	string content;
 };
 
@@ -256,6 +344,8 @@ class MiniLog : public IMiniLog, public ThreadLaunch
 	bool m_LogEnable;
 	bool m_Running;
 
+    Locker m_MessagesLock;
+    Locker m_TargetsLock;
 	deque<MiniMessage *> m_Messages;
     vector<IMiniLogTarget *> m_Targets;
 public:
@@ -330,14 +420,15 @@ private:
 		const std::string & file,
 		const int line,
 		const std::string & body) {
+		MiniMessage *msg = new MiniMessage;
+        msg->m_DateTime = Utility::GetCurrentTime();
 		
 		char header[512] = { 0 };
 		char *message = 0;
-        int messageLen = MakeHeader(header, sizeof(header), level, file, line);
-		MiniMessage *msg = new MiniMessage;
+        int messageLen = MakeHeader(header, sizeof(header), msg->m_DateTime, level, file, line);
 		
         if (messageLen > 0) {
-            messageLen += (int)body.size();
+            messageLen += (int)body.size() + 1;
 			message = new char[messageLen];
 			if (message != NULL) {
                 messageLen = snprintf(message, messageLen, FormatCombine, header, body.c_str());
@@ -353,12 +444,18 @@ private:
 		return msg;
 	}
     
-    int MakeHeader(char *header, int headerLen, MiniLogLevel level, const std::string file, int line) {
+    int MakeHeader(
+                   char *header,
+                   int headerLen,
+                   DateTime time,
+                   MiniLogLevel level,
+                   const std::string &file,
+                   int line) {
         int messageLen = 0;
 
 		if (m_Config & MLC_FMT_DATETIME) {
 			messageLen = snprintf(header, headerLen, FormatBase, header,
-				Utility::GetCurrentTimeString().c_str());
+				time.ToString().c_str());
 		}
 		if (m_Config & MLC_FMT_LEVEL) {
 			messageLen = snprintf(header, headerLen, FormatBase, header,
@@ -373,7 +470,7 @@ private:
         return messageLen;
     }
 
-	void DeleteMessage(MiniMessage * msg) {
+	void DeleteMessage(MiniMessage *& msg) {
 		if (msg != NULL) {
 			delete msg;
 			msg = NULL;
@@ -392,20 +489,19 @@ private:
 	}
 
 	void PushMessage(MiniMessage * msg) {
-		// TODO
-		// add lock
-		m_Messages.push_back(msg);
+        lock(m_MessagesLock) {
+            m_Messages.push_back(msg);
+        }
 	}
 
 	bool PopMessage(MiniMessage *&msg) {
-		// TODO
-		// add lock
-		if (m_Messages.empty()) {
-			return false;
-		}
-		msg = m_Messages.front();
-		m_Messages.pop_front();
-
+        lock(m_MessagesLock) {
+            if (m_Messages.empty()) {
+                return false;
+            }
+            msg = m_Messages.front();
+            m_Messages.pop_front();
+        }
 		return true;
 	}
     
@@ -442,20 +538,24 @@ private:
     }
     
     void ReleaseTargets() {
-        while (!m_Targets.empty()) {
-            IMiniLogTarget * pTarget = m_Targets.back();
-            m_Targets.pop_back();
-            delete pTarget;
-            pTarget = NULL;
+        lock(m_TargetsLock) {
+            while (!m_Targets.empty()) {
+                IMiniLogTarget * pTarget = m_Targets.back();
+                m_Targets.pop_back();
+                delete pTarget;
+                pTarget = NULL;
+            }
         }
     }
     
     void ReleaseMessages() {
-        while (!m_Messages.empty()) {
-            MiniMessage * pmsg = m_Messages.front();
-            m_Messages.pop_front();
-            delete pmsg;
-            pmsg = NULL;
+        lock(m_MessagesLock) {
+            while (!m_Messages.empty()) {
+                MiniMessage * pmsg = m_Messages.front();
+                m_Messages.pop_front();
+                delete pmsg;
+                pmsg = NULL;
+            }
         }
     }
     
@@ -486,8 +586,7 @@ private:
 				break;
 			}
             
-            // TODO
-            // sleep (50)
+            Utility::Sleep(100);
 		}
 	}
 };
