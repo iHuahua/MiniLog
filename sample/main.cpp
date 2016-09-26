@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include "MiniLog.hpp"
+#include "../MiniLog/MiniLog.hpp"
 
 #if defined(__MINILOG_USING_NAMESPACE__) && (__MINILOG_USING_NAMESPACE__)
 using namespace __MINILOG_NS__;
@@ -35,7 +35,7 @@ void test() {
 
 int main(int argc, const char * argv[]) {
     // insert code here...
-//    test();
+    test();
     log_test();
 #ifdef _WIN32
 	system("PAUSE");

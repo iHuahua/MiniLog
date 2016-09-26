@@ -109,7 +109,7 @@ public:
         char message[24] = { 0 };
         snprintf(message, sizeof(message), "%d/%02d/%02d %02d:%02d:%02d.%03d",
                  Year, Month, Day, Hour, Minute, Second, MilliSecond);
-        return message;
+        return string(message);
     }
 };
 
@@ -131,19 +131,19 @@ public:
         stTime.Second      = t_time.wSecond;
 #else    // for linux
         time_t now;
-        struct tm *timenow;
+        struct tm *tmnow;
         struct timeval tv;
         time(&now);
         gettimeofday(&tv, NULL);
-        timenow = localtime(&now);
+        tmnow = localtime(&now);
         
-        stTime.Year        = 1900 + timenow->tm_year;
-        stTime.Month       = 1 + timenow->tm_mon;
-        stTime.DayOfWeek   = timenow->tm_wday;
-        stTime.Day         = timenow->tm_mday;
-        stTime.Hour        = timenow->tm_hour;
-        stTime.Minute      = timenow->tm_min;
-        stTime.Second      = timenow->tm_sec;
+        stTime.Year        = 1900 + tmnow->tm_year;
+        stTime.Month       = 1 + tmnow->tm_mon;
+        stTime.DayOfWeek   = tmnow->tm_wday;
+        stTime.Day         = tmnow->tm_mday;
+        stTime.Hour        = tmnow->tm_hour;
+        stTime.Minute      = tmnow->tm_min;
+        stTime.Second      = tmnow->tm_sec;
         stTime.MilliSecond = tv.tv_usec / 1000;
 #endif    // defined(WIN32)
         return stTime;
@@ -305,6 +305,11 @@ public:
     }
     
     virtual bool Start() override {
+        if (m_FStream.is_open())
+            return true;
+
+
+
         return true;
     }
     

@@ -18,7 +18,7 @@
  *  __MINILOG_NAMESPACE__
  *      命名空间定义，启用命名空间时日志库所在的命名空间，默认 Huahua，可自行修改
  */
-#define __MINILOG_USING_NAMESPACE__ 0
+#define __MINILOG_USING_NAMESPACE__ 1
 #define __MINILOG_NAMESPACE__ Huahua
 
 
