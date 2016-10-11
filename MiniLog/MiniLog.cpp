@@ -11,6 +11,7 @@
 #include <fstream>
 #include <vector>
 #include <deque>
+#include <cstring>
 #include "MiniLog.hpp"
 
 #if defined(_WIN32)
@@ -21,6 +22,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <semaphore.h>
+
 #endif // _WIN32
 
 #if defined(__APPLE__)
@@ -80,6 +82,7 @@ static const short MiniLogLevelColor[] =
     FOREGROUND_RED | FOREGROUND_GREEN,
     FOREGROUND_RED | FOREGROUND_INTENSITY
 };
+static const char *PathSeparator = "\\";
 #else
 static const char *MiniLogLevelColor[] =
 {
@@ -89,6 +92,7 @@ static const char *MiniLogLevelColor[] =
     "\e[33m\e[1m",  //hight yellow
     "\e[31m\e[1m",  //hight red
 };
+static const char *PathSeparator = "/";
 #endif
 
 
@@ -103,7 +107,7 @@ public:
     uint16_t Minute;
     uint16_t Second;
     uint16_t MilliSecond;
-    
+
 public:
     string ToString() {
         char message[24] = { 0 };
@@ -116,7 +120,7 @@ public:
 class Utility
 {
 public:
-    
+
     static DateTime GetCurrentTime() {
         DateTime stTime;
 #if  defined(WIN32)
@@ -136,7 +140,7 @@ public:
         time(&now);
         gettimeofday(&tv, NULL);
         tmnow = localtime(&now);
-        
+
         stTime.Year        = 1900 + tmnow->tm_year;
         stTime.Month       = 1 + tmnow->tm_mon;
         stTime.DayOfWeek   = tmnow->tm_wday;
@@ -148,7 +152,7 @@ public:
 #endif    // defined(WIN32)
         return stTime;
     }
-    
+
     static void Sleep(uint32_t ms) {
 #if defined(_WIN32)
         Sleep(ms);
@@ -179,7 +183,7 @@ public:
         pthread_mutexattr_destroy(&attr);
 #endif
     }
-    
+
     virtual ~Locker() {
 #ifdef _WIN32
         DeleteCriticalSection(&_crit);
@@ -187,7 +191,7 @@ public:
         pthread_mutex_destroy(&_crit);
 #endif
     }
-    
+
     void Lock() {
 #ifdef _WIN32
             EnterCriticalSection(&_crit);
@@ -196,7 +200,7 @@ public:
 #endif
         m_Locked = true;
     }
-    
+
     void Unlock() {
 #ifdef _WIN32
         LeaveCriticalSection(&_crit);
@@ -205,7 +209,7 @@ public:
 #endif
         m_Locked = false;
     }
-    
+
     bool Locked() {
         return m_Locked;
     }
@@ -295,6 +299,7 @@ public:
     virtual bool Start() = 0;
     virtual bool Stop() = 0;
     virtual bool ProcMessage(MiniMessage *) = 0;
+    uint32_t GetConfig();
 };
 
 class MiniLogTargetFile : public IMiniLogTarget
@@ -303,41 +308,63 @@ class MiniLogTargetFile : public IMiniLogTarget
 public:
     MiniLogTargetFile(MiniLog * miniLog) : IMiniLogTarget(miniLog) {
     }
-    
+
     virtual bool Start() override {
         if (m_FStream.is_open())
             return true;
 
+        m_FStream.open("test.log", std::ios::out | std::ios::app);
 
+        return m_FStream.good();
+    }
 
+    virtual bool Stop() override {
+        if (!m_FStream.is_open())
+            return false;
+
+        m_FStream.flush();
+        m_FStream.close();
         return true;
     }
-    
-    virtual bool Stop() override {
-        return false;
-    }
-    
+
     virtual bool ProcMessage(MiniMessage * msg) override {
+        m_FStream << msg->content << std::endl;
         return true;
     }
 };
 
 class MiniLogTargetConsole : public IMiniLogTarget
 {
-    
+
 public:
     MiniLogTargetConsole(MiniLog * miniLog) : IMiniLogTarget(miniLog) {
     }
-    
+
     virtual bool Start() override {
         return true;
     }
-    
+
     virtual bool Stop() override {
         return true;
     }
-    
-    virtual bool ProcMessage(MiniMessage * msg) override;
+
+    virtual bool ProcMessage(MiniMessage * msg) override {
+        if (EnableColorConsole()) {
+            std::cout << MiniLogLevelColor[msg->m_Level];
+        }
+
+        std::cout << msg->content << std::endl;
+
+        if (EnableColorConsole()) {
+            std::cout << "\e[0m";
+        }
+
+        return true;
+    }
+
+    bool EnableColorConsole() {
+        return (GetConfig() & MLC_FMT_COLOR != 0);
+    }
 };
 
 class MiniLog : public IMiniLog, public ThreadLaunch
@@ -359,7 +386,7 @@ public:
         m_Running = false;
         m_Config = MLC_OPT_FILE | MLC_OPT_CONSOLE
         | MLC_FMT_DATETIME | MLC_FMT_LEVEL
-        | MLC_FMT_ERRORSTACK | MLC_FMT_COLOR;
+        | MLC_FMT_ERRORSTACK | MLC_FMT_COLOR | MLC_FMT_FILELINE;
 	}
 	~MiniLog() {
         Release();
@@ -410,15 +437,25 @@ public:
 	}
 
 	virtual void PushMessage(
-		MiniLogLevel level, 
+		MiniLogLevel level,
 		const std::string & file,
-		const int line, 
+		const int line,
 		const std::string & body) override {
 		MiniMessage* msg = MakeMessage(level, file, line, body);
 		PushMessage(msg);
 	}
 
+    virtual void PushMiniMessage(const std::string & message) override {
+        MiniMessage* msg = new MiniMessage;
+        msg->content = message;
+        msg->m_Level = MLL_INFO;
+        PushMessage(msg);
+    }
+
 private:
+    bool EnableFileLine() {
+        return m_Config & MLC_FMT_FILELINE != 0;
+    }
 
 	MiniMessage *MakeMessage(
 		MiniLogLevel level,
@@ -427,51 +464,60 @@ private:
 		const std::string & body) {
 		MiniMessage *msg = new MiniMessage;
         msg->m_DateTime = Utility::GetCurrentTime();
-		
-		char header[512] = { 0 };
+
+		char header[64] = { 0 };
+        char tail[512] = { 0 };
 		char *message = 0;
-        int messageLen = MakeHeader(header, sizeof(header), msg->m_DateTime, level, file, line);
-		
-        if (messageLen > 0) {
-            messageLen += (int)body.size() + 1;
-			message = new char[messageLen];
-			if (message != NULL) {
-                messageLen = snprintf(message, messageLen, FormatCombine, header, body.c_str());
-				msg->content = message;
-				delete[] message;
-			}
-		} 
-		else {
-			msg->content = body;
+        int tailLen = 0;
+        int headerLen = MakeHeader(header, sizeof(header), msg->m_DateTime, level);
+
+        if (EnableFileLine()) {
+            size_t subbeg = file.rfind(PathSeparator) + 1;
+            tailLen = snprintf(tail, sizeof(tail), "[%s:%d]",
+                file.substr(subbeg, file.length() - subbeg).c_str(), line);
 		}
+
+        if (tailLen > 0 || headerLen > 0) {
+            int messageLen = (int)body.size() + headerLen + tailLen + 1;
+            message = new char[messageLen];
+            if (message != NULL) {
+                if (headerLen > 0)
+                    snprintf(message, messageLen, FormatCombine, header, body.c_str());
+                if (tailLen > 0)
+                    strcat(message, tail);
+                msg->content = message;
+                delete[] message;
+            }
+        }
+        else {
+            msg->content = body;
+        }
+
 		msg->m_Level = level;
 
 		return msg;
 	}
-    
+
     int MakeHeader(
-                   char *header,
-                   int headerLen,
-                   DateTime time,
-                   MiniLogLevel level,
-                   const std::string &file,
-                   int line) {
+        char *header,
+        int headerLen,
+        DateTime time,
+        MiniLogLevel level) {
         int messageLen = 0;
+        char *tmpheader = new char[headerLen];
+        memset(tmpheader, 0, headerLen);
 
 		if (m_Config & MLC_FMT_DATETIME) {
-			messageLen = snprintf(header, headerLen, FormatBase, header,
+            strncpy(tmpheader, header, headerLen);
+			messageLen = snprintf(header, headerLen, FormatBase, tmpheader,
 				time.ToString().c_str());
 		}
 		if (m_Config & MLC_FMT_LEVEL) {
-			messageLen = snprintf(header, headerLen, FormatBase, header,
+            strncpy(tmpheader, header, headerLen);
+			messageLen = snprintf(header, headerLen, FormatBase, tmpheader,
 				MiniLogLevelString[level]);
 		}
-		if (m_Config & MLC_FMT_FILELINE) {
-			char szFileLine[256] = { 0 };
-			snprintf(szFileLine, sizeof(szFileLine), "%s:%d", file.c_str(), line);
-			messageLen = snprintf(header, headerLen, FormatBase, header, szFileLine);
-		}
-        
+
         return messageLen;
     }
 
@@ -483,14 +529,14 @@ private:
 	}
 
 	void AddStartupInfo() {
-		// ----------
 		LOGI("------------------------------------------------------------");
 		LOGI("--------------------  MiniLog Startup  ---------------------");
 	}
 
 	void AddShutdownInfo() {
 		LOGI("--------------------  MiniLog Shutdown  --------------------");
-		LOGI("------------------------------------------------------------\n\n\n");
+		LOGI("------------------------------------------------------------");
+        PushMiniMessage("\n\n\n");
 	}
 
 	void PushMessage(MiniMessage * msg) {
@@ -509,12 +555,12 @@ private:
         }
 		return true;
 	}
-    
+
     bool InitForStart() {
         ReleaseTargets();
         return InitTargets();
     }
-    
+
     bool InitTargets() {
         bool retval = true;
         if (m_Config & MLC_OPT_FILE) {
@@ -541,18 +587,19 @@ private:
         }
         return retval;
     }
-    
+
     void ReleaseTargets() {
         lock(m_TargetsLock) {
             while (!m_Targets.empty()) {
                 IMiniLogTarget * pTarget = m_Targets.back();
                 m_Targets.pop_back();
+                pTarget->Stop();
                 delete pTarget;
                 pTarget = NULL;
             }
         }
     }
-    
+
     void ReleaseMessages() {
         lock(m_MessagesLock) {
             while (!m_Messages.empty()) {
@@ -563,7 +610,7 @@ private:
             }
         }
     }
-    
+
     void Release() {
         ReleaseMessages();
         ReleaseTargets();
@@ -578,7 +625,6 @@ private:
 		*/
 		while (true)
 		{
-			// TODO
 			while (PopMessage(message))
 			{
                 for (size_t tid = 0; tid < m_Targets.size(); ++tid) {
@@ -590,25 +636,15 @@ private:
 			if (!m_Running) {
 				break;
 			}
-            
+
             Utility::Sleep(100);
 		}
 	}
 };
 
 
-bool MiniLogTargetConsole::ProcMessage(MiniMessage * msg) {
-    if (m_MiniLog->GetConfig() & MLC_FMT_COLOR) {
-        std::cout << MiniLogLevelColor[msg->m_Level];
-    }
-    
-    std::cout << msg->content << std::endl;
-    
-    if (m_MiniLog->GetConfig() & MLC_FMT_COLOR) {
-        std::cout << "\e[0m";
-    }
-
-    return true;
+uint32_t IMiniLogTarget::GetConfig() {
+    return m_MiniLog->GetConfig();
 }
 
 IMiniLog * __init__ = nullptr;

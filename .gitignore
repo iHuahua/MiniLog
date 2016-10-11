@@ -255,3 +255,6 @@ ModelManifest.xml
 /proj/xcode.bak/MiniLog.xcodeproj/project.xcworkspace/xcuserdata/huahua.xcuserdatad/UserInterfaceState.xcuserstate
 /proj/xcode.bak/MiniLog.xcodeproj/project.xcworkspace/contents.xcworkspacedata
 /proj/xcode.bak/MiniLog.xcodeproj/project.pbxproj
+将删除 ".\\bin/"
+将删除 .idea/
+将删除 MiniLog/.idea/

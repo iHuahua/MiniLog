@@ -3,6 +3,8 @@ project(MiniLog)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
+include_directories(.)
+
 set(SOURCE_FILES
     MiniLog/MiniLog.cpp
     MiniLog/MiniLog.hpp)
