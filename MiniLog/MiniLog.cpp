@@ -363,7 +363,7 @@ public:
     }
 
     bool EnableColorConsole() {
-        return (GetConfig() & MLC_FMT_COLOR != 0);
+        return ((GetConfig() & MLC_FMT_COLOR) != 0);
     }
 };
 
@@ -454,7 +454,7 @@ public:
 
 private:
     bool EnableFileLine() {
-        return m_Config & MLC_FMT_FILELINE != 0;
+        return ((m_Config & MLC_FMT_FILELINE) != 0);
     }
 
 	MiniMessage *MakeMessage(
