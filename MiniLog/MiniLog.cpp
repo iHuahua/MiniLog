@@ -11,39 +11,14 @@
 #include <fstream>
 #include <vector>
 #include <deque>
-#include <cstring>
+#include <thread>
 #include "MiniLog.hpp"
 
 #if defined(_WIN32)
 #include <Windows.h>
-#include <process.h>
 #else //__linux__
-#include <unistd.h>
-#include <pthread.h>
 #include <sys/time.h>
-#include <semaphore.h>
-
 #endif // _WIN32
-
-#if defined(__APPLE__)
-#include <TargetConditionals.h>
-#include <dispatch/dispatch.h>
-#if !TARGET_OS_IPHONE
-#include <libproc.h>
-#endif
-#endif //__APPLE__
-
-/*
- *	Cross platform Macro
- */
-#if defined(_WIN32)
-#define MLCALLAPI WINAPI
-typedef unsigned thread_return_t;
-#else
-#define MLCALLAPI
-typedef void * thread_return_t;
-#endif // _WIN32
-
 
 
 
@@ -53,10 +28,12 @@ using std::string;
 using std::deque;
 using std::vector;
 using std::fstream;
+using std::thread;
+using std::mutex;
 
 class Utility;
-class ThreadLaunch;
 class MiniLog;
+class Semaphore;
 class IMiniLogTarget;
 class MiniLogTargetFile;
 class MiniLogTargetConsole;
@@ -154,129 +131,34 @@ public:
     }
 
     static void Sleep(uint32_t ms) {
-#if defined(_WIN32)
-        Sleep(ms);
-#else
-        usleep(ms * 1000);
-#endif
+        std::this_thread::sleep_for(std::chrono::milliseconds(ms));
     }
 };
 
-class Locker
-{
-#ifdef _WIN32
-    CRITICAL_SECTION _crit;
-#else
-    pthread_mutex_t  _crit;
-#endif
-    bool m_Locked;
+class Semaphore {
 public:
-    Locker() : m_Locked(false) {
-#ifdef _WIN32
-        InitializeCriticalSection(&_crit);
-#else
-        //_crit = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-        pthread_mutexattr_t attr;
-        pthread_mutexattr_init(&attr);
-        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-        pthread_mutex_init(&_crit, &attr);
-        pthread_mutexattr_destroy(&attr);
-#endif
+    Semaphore (int count_ = 0)
+            : count(count_) {}
+
+    inline void notify() {
+        std::unique_lock<std::mutex> lock(mtx);
+        count++;
+        cv.notify_one();
     }
 
-    virtual ~Locker() {
-#ifdef _WIN32
-        DeleteCriticalSection(&_crit);
-#else
-        pthread_mutex_destroy(&_crit);
-#endif
+    inline void wait() {
+        std::unique_lock<std::mutex> lock(mtx);
+
+        while(count == 0){
+            cv.wait(lock);
+        }
+        count--;
     }
 
-    void Lock() {
-#ifdef _WIN32
-            EnterCriticalSection(&_crit);
-#else
-            pthread_mutex_lock(&_crit);
-#endif
-        m_Locked = true;
-    }
-
-    void Unlock() {
-#ifdef _WIN32
-        LeaveCriticalSection(&_crit);
-#else
-        pthread_mutex_unlock(&_crit);
-#endif
-        m_Locked = false;
-    }
-
-    bool Locked() {
-        return m_Locked;
-    }
-};
-
-class AutoLocker {
-public:
-    explicit AutoLocker(Locker & lk) :_lock(lk) { _lock.Lock(); }
-    ~AutoLocker() { if (Locked()) Unlock(); }
-    void Unlock() { _lock.Unlock(); }
-    bool Locked() { return _lock.Locked(); }
 private:
-    Locker & _lock;
-};
-#define lock(obj) for (AutoLocker _lock(obj); _lock.Locked(); _lock.Unlock())
-
-class ThreadLaunch
-{
-#if defined(_WIN32)
-	unsigned m_ThreadID;
-#else
-    pthread_t m_ThreadID;
-#endif
-public:
-	ThreadLaunch() : m_ThreadID(0) { }
-	virtual ~ThreadLaunch() { }
-	virtual void Run() = 0;
-
-	bool Start() {
-#if defined(_WIN32)
-		unsigned tid = _beginthreadex(0, 0, ThreadProc, (void *)this, 0, NULL);
-		if (tid == -1 || tid == 0) {
-			std::cerr << "[MiniLog] create thread failed\n";
-			return false;
-		}
-		m_ThreadID = tid;
-#else
-		int ret = pthread_create(&m_ThreadID, NULL, ThreadProc, (void*)this);
-		if (ret != 0) {
-			std::cerr << "[MiniLog] create thread failed\n";
-			return false;
-		}
-#endif // defined(_WIN32)
-
-		return true;
-	}
-
-	bool Stop() {
-#ifdef WIN32
-		if (WaitForSingleObject((HANDLE)m_ThreadID, INFINITE) != WAIT_OBJECT_0) {
-			return false;
-		}
-#else
-		if (pthread_join(m_ThreadID, NULL) != 0) {
-			return false;
-		}
-#endif
-		return true;
-	}
-
-	static thread_return_t MLCALLAPI ThreadProc(void *pArg) {
-		ThreadLaunch *pThread = (ThreadLaunch *)pArg;
-		pThread->Run();
-		return 0;
-	}
-private:
-
+    std::mutex mtx;
+    std::condition_variable cv;
+    int count;
 };
 
 class MiniMessage
@@ -367,7 +249,7 @@ public:
     }
 };
 
-class MiniLog : public IMiniLog, public ThreadLaunch
+class MiniLog : public IMiniLog
 {
 	string m_RootDirectory;
 	string m_SubDirectory;
@@ -376,10 +258,12 @@ class MiniLog : public IMiniLog, public ThreadLaunch
 	bool m_LogEnable;
 	bool m_Running;
 
-    Locker m_MessagesLock;
-    Locker m_TargetsLock;
+    mutex m_MessagesMutex;
+    mutex m_TargetsMutex;
 	deque<MiniMessage *> m_Messages;
     vector<IMiniLogTarget *> m_Targets;
+    thread m_Thread;
+    Semaphore m_ThreadSemaphore;
 public:
     MiniLog() {
         m_LogEnable = true;
@@ -412,7 +296,10 @@ public:
             std::cerr << "MiniLog init failed\n";
             return false;
         }
-		m_Running = ThreadLaunch::Start();
+
+        m_Thread = thread(std::mem_fn(&MiniLog::Run), this);
+        m_ThreadSemaphore.wait();
+
 		AddStartupInfo();
 
 		return m_Running;
@@ -425,7 +312,7 @@ public:
 
 		AddShutdownInfo();
 		m_Running = false;
-		ThreadLaunch::Stop();
+        m_Thread.join();
 	}
 
 	virtual void SetEnable(bool enable) override {
@@ -540,19 +427,20 @@ private:
 	}
 
 	void PushMessage(MiniMessage * msg) {
-        lock(m_MessagesLock) {
-            m_Messages.push_back(msg);
-        }
+        m_MessagesMutex.lock();
+        m_Messages.push_back(msg);
+        m_MessagesMutex.unlock();
 	}
 
 	bool PopMessage(MiniMessage *&msg) {
-        lock(m_MessagesLock) {
-            if (m_Messages.empty()) {
-                return false;
-            }
-            msg = m_Messages.front();
-            m_Messages.pop_front();
+        m_MessagesMutex.lock();
+        if (m_Messages.empty()) {
+            m_MessagesMutex.unlock();
+            return false;
         }
+        msg = m_Messages.front();
+        m_Messages.pop_front();
+        m_MessagesMutex.unlock();
 		return true;
 	}
 
@@ -589,7 +477,8 @@ private:
     }
 
     void ReleaseTargets() {
-        lock(m_TargetsLock) {
+        m_TargetsMutex.lock();
+        {
             while (!m_Targets.empty()) {
                 IMiniLogTarget * pTarget = m_Targets.back();
                 m_Targets.pop_back();
@@ -598,10 +487,12 @@ private:
                 pTarget = NULL;
             }
         }
+        m_TargetsMutex.unlock();
     }
 
     void ReleaseMessages() {
-        lock(m_MessagesLock) {
+        m_MessagesMutex.lock();
+        {
             while (!m_Messages.empty()) {
                 MiniMessage * pmsg = m_Messages.front();
                 m_Messages.pop_front();
@@ -609,6 +500,7 @@ private:
                 pmsg = NULL;
             }
         }
+        m_MessagesMutex.unlock();
     }
 
     void Release() {
@@ -616,8 +508,9 @@ private:
         ReleaseTargets();
     }
 
-	virtual void Run() override	{
+	virtual void Run() {
 		m_Running = true;
+        m_ThreadSemaphore.notify();
 		MiniMessage *message = NULL;
 
 		/*
