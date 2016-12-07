@@ -9,15 +9,17 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <deque>
 #include <thread>
+#include <iomanip>
 #include "MiniLog.hpp"
 
 #if defined(_WIN32)
 #include <Windows.h>
-#else //__linux__
-#include <sys/time.h>
+#elif defined(__ANDROID__)
+#include <android/log.h>
 #endif // _WIN32
 
 
@@ -30,6 +32,7 @@ using std::vector;
 using std::fstream;
 using std::thread;
 using std::mutex;
+using std::chrono::system_clock;
 
 class Utility;
 class MiniLog;
@@ -72,62 +75,36 @@ static const char *MiniLogLevelColor[] =
 static const char *PathSeparator = "/";
 #endif
 
-
-class DateTime
-{
-public:
-    uint16_t Year;
-    uint16_t Month;
-    uint16_t DayOfWeek;	//!< 0=星期日，1=星期一...
-    uint16_t Day;
-    uint16_t Hour;
-    uint16_t Minute;
-    uint16_t Second;
-    uint16_t MilliSecond;
-
-public:
-    string ToString() {
-        char message[24] = { 0 };
-        snprintf(message, sizeof(message), "%d/%02d/%02d %02d:%02d:%02d.%03d",
-                 Year, Month, Day, Hour, Minute, Second, MilliSecond);
-        return string(message);
-    }
-};
-
 class Utility
 {
 public:
 
-    static DateTime GetCurrentTime() {
-        DateTime stTime;
-#if  defined(WIN32)
-        SYSTEMTIME t_time;
-        GetLocalTime(&t_time);
-        stTime.Year        = t_time.wYear;
-        stTime.Month       = t_time.wMonth;
-        stTime.DayOfWeek   = t_time.wDayOfWeek;
-        stTime.Day         = t_time.wDay;
-        stTime.Hour        = t_time.wHour;
-        stTime.Minute      = t_time.wMinute;
-        stTime.Second      = t_time.wSecond;
-#else    // for linux
-        time_t now;
-        struct tm *tmnow;
-        struct timeval tv;
-        time(&now);
-        gettimeofday(&tv, NULL);
-        tmnow = localtime(&now);
+    static system_clock::time_point GetCurrentTimePoint() {
+        return system_clock::now();
+    }
 
-        stTime.Year        = 1900 + tmnow->tm_year;
-        stTime.Month       = 1 + tmnow->tm_mon;
-        stTime.DayOfWeek   = tmnow->tm_wday;
-        stTime.Day         = tmnow->tm_mday;
-        stTime.Hour        = tmnow->tm_hour;
-        stTime.Minute      = tmnow->tm_min;
-        stTime.Second      = tmnow->tm_sec;
-        stTime.MilliSecond = tv.tv_usec / 1000;
-#endif    // defined(WIN32)
-        return stTime;
+    static string GetCurrentTimeMS() {
+        char message[24] = { 0 };
+        auto _time_point = GetCurrentTimePoint();
+        time_t _time_now = system_clock::to_time_t(_time_point);
+        struct tm *_tm = localtime(&_time_now);
+        snprintf(message, sizeof(message), "%d/%02d/%02d %02d:%02d:%02d.%03d",
+            1900 + _tm->tm_year, 1 + _tm->tm_mon, _tm->tm_mday,
+            _tm->tm_hour, _tm->tm_min, _tm->tm_sec,
+                 (int)(_time_point.time_since_epoch().count() % 1000));
+
+        return string(message);
+    }
+
+    static string GetCurrentTime(const char *fmt) {
+        auto _time_point = GetCurrentTimePoint();
+        time_t _time_now = system_clock::to_time_t(_time_point);
+        struct tm *_tm = localtime(&_time_now);
+
+        std::ostringstream oss;
+        oss << std::put_time(_tm, fmt);
+
+        return oss.str();
     }
 
     static void Sleep(uint32_t ms) {
@@ -165,7 +142,7 @@ class MiniMessage
 {
 public:
 	MiniLogLevel m_Level;
-    DateTime m_DateTime;
+    string m_DateTime;
 	string content;
 };
 
@@ -186,16 +163,23 @@ public:
 
 class MiniLogTargetFile : public IMiniLogTarget
 {
+    string m_RootDirectory;
     fstream m_FStream;
 public:
     MiniLogTargetFile(MiniLog * miniLog) : IMiniLogTarget(miniLog) {
     }
 
     virtual bool Start() override {
-        if (m_FStream.is_open())
+        if (m_FStream.is_open()) {
             return true;
+        }
+        if (m_RootDirectory.empty()) {
+            return false;
+        }
 
-        m_FStream.open("test.log", std::ios::out | std::ios::app);
+        string now = Utility::GetCurrentTime("%Y%m%d-%H%M%S");
+        string file = m_RootDirectory + PathSeparator + now + ".log";
+        m_FStream.open(file, std::ios::out | std::ios::app);
 
         return m_FStream.good();
     }
@@ -213,11 +197,15 @@ public:
         m_FStream << msg->content << std::endl;
         return true;
     }
+
+    void SetLogPath(string path) {
+        m_RootDirectory = path;
+    }
 };
 
 class MiniLogTargetConsole : public IMiniLogTarget
 {
-
+    const char *TAG = "MiniLog";
 public:
     MiniLogTargetConsole(MiniLog * miniLog) : IMiniLogTarget(miniLog) {
     }
@@ -236,6 +224,11 @@ public:
         }
 
         std::cout << msg->content << std::endl;
+#if defined(__WIN32)
+        OutputDebugStringA(msg->content.c_str());
+#elif defined(__ANDROID__)
+        __android_log_print(msg->m_Level + 2, TAG, msg->content.c_str());
+#endif
 
         if (EnableColorConsole()) {
             std::cout << "\e[0m";
@@ -268,6 +261,7 @@ public:
     MiniLog() {
         m_LogEnable = true;
         m_Running = false;
+        m_RootDirectory = ".";
         m_Config = MLC_OPT_FILE | MLC_OPT_CONSOLE
         | MLC_FMT_DATETIME | MLC_FMT_LEVEL
         | MLC_FMT_ERRORSTACK | MLC_FMT_COLOR | MLC_FMT_FILELINE;
@@ -350,7 +344,7 @@ private:
 		const int line,
 		const std::string & body) {
 		MiniMessage *msg = new MiniMessage;
-        msg->m_DateTime = Utility::GetCurrentTime();
+        msg->m_DateTime = Utility::GetCurrentTimeMS();
 
 		char header[64] = { 0 };
         char tail[512] = { 0 };
@@ -388,7 +382,7 @@ private:
     int MakeHeader(
         char *header,
         int headerLen,
-        DateTime time,
+        string time,
         MiniLogLevel level) {
         int messageLen = 0;
         char *tmpheader = new char[headerLen];
@@ -397,7 +391,7 @@ private:
 		if (m_Config & MLC_FMT_DATETIME) {
             strncpy(tmpheader, header, headerLen);
 			messageLen = snprintf(header, headerLen, FormatBase, tmpheader,
-				time.ToString().c_str());
+				time.c_str());
 		}
 		if (m_Config & MLC_FMT_LEVEL) {
             strncpy(tmpheader, header, headerLen);
@@ -452,9 +446,10 @@ private:
     bool InitTargets() {
         bool retval = true;
         if (m_Config & MLC_OPT_FILE) {
-            IMiniLogTarget *pTarget = new MiniLogTargetFile(this);
+            MiniLogTargetFile *pTarget = new MiniLogTargetFile(this);
+            pTarget->SetLogPath(m_RootDirectory);
             if (pTarget->Start()) {
-                m_Targets.push_back(pTarget);
+                m_Targets.push_back((IMiniLogTarget *)pTarget);
             }
             else {
                 delete pTarget;

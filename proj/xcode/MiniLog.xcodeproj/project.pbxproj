@@ -1,0 +1,347 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		47BA46FE1D3C775000975FEB /* MiniLog.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 47BA46FC1D3C775000975FEB /* MiniLog.cpp */; };
+		47BA46FF1D3C775000975FEB /* MiniLog.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 47BA46FD1D3C775000975FEB /* MiniLog.hpp */; };
+		47BA470C1D3C77C700975FEB /* Main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 47BA470B1D3C77C700975FEB /* Main.cpp */; };
+		47BA470D1D3C87EA00975FEB /* libMiniLog.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 47BA46EE1D3C756F00975FEB /* libMiniLog.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		47BA47021D3C776800975FEB /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		47BA46EE1D3C756F00975FEB /* libMiniLog.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libMiniLog.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		47BA46FC1D3C775000975FEB /* MiniLog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MiniLog.cpp; path = ../../../MiniLog/MiniLog.cpp; sourceTree = "<group>"; };
+		47BA46FD1D3C775000975FEB /* MiniLog.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = MiniLog.hpp; path = ../../../MiniLog/MiniLog.hpp; sourceTree = "<group>"; };
+		47BA47041D3C776800975FEB /* MiniLogRun */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = MiniLogRun; sourceTree = BUILT_PRODUCTS_DIR; };
+		47BA470B1D3C77C700975FEB /* Main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Main.cpp; path = ../../../sample/Main.cpp; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		47BA46EB1D3C756F00975FEB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		47BA47011D3C776800975FEB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				47BA470D1D3C87EA00975FEB /* libMiniLog.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		47BA46E51D3C756F00975FEB = {
+			isa = PBXGroup;
+			children = (
+				47BA46F01D3C756F00975FEB /* MiniLog */,
+				47BA47051D3C776800975FEB /* MiniLogRun */,
+				47BA46EF1D3C756F00975FEB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		47BA46EF1D3C756F00975FEB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				47BA46EE1D3C756F00975FEB /* libMiniLog.a */,
+				47BA47041D3C776800975FEB /* MiniLogRun */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		47BA46F01D3C756F00975FEB /* MiniLog */ = {
+			isa = PBXGroup;
+			children = (
+				47BA46FC1D3C775000975FEB /* MiniLog.cpp */,
+				47BA46FD1D3C775000975FEB /* MiniLog.hpp */,
+			);
+			path = MiniLog;
+			sourceTree = "<group>";
+		};
+		47BA47051D3C776800975FEB /* MiniLogRun */ = {
+			isa = PBXGroup;
+			children = (
+				47BA470B1D3C77C700975FEB /* Main.cpp */,
+			);
+			path = MiniLogRun;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		47BA46EC1D3C756F00975FEB /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				47BA46FF1D3C775000975FEB /* MiniLog.hpp in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		47BA46ED1D3C756F00975FEB /* MiniLog */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 47BA46F91D3C756F00975FEB /* Build configuration list for PBXNativeTarget "MiniLog" */;
+			buildPhases = (
+				47BA46EA1D3C756F00975FEB /* Sources */,
+				47BA46EB1D3C756F00975FEB /* Frameworks */,
+				47BA46EC1D3C756F00975FEB /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MiniLog;
+			productName = MiniLog;
+			productReference = 47BA46EE1D3C756F00975FEB /* libMiniLog.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		47BA47031D3C776800975FEB /* MiniLogRun */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 47BA47081D3C776800975FEB /* Build configuration list for PBXNativeTarget "MiniLogRun" */;
+			buildPhases = (
+				47BA47001D3C776800975FEB /* Sources */,
+				47BA47011D3C776800975FEB /* Frameworks */,
+				47BA47021D3C776800975FEB /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MiniLogRun;
+			productName = MiniLogRun;
+			productReference = 47BA47041D3C776800975FEB /* MiniLogRun */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		47BA46E61D3C756F00975FEB /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0810;
+				ORGANIZATIONNAME = "Huahua Workspace";
+				TargetAttributes = {
+					47BA46ED1D3C756F00975FEB = {
+						CreatedOnToolsVersion = 7.3.1;
+					};
+					47BA47031D3C776800975FEB = {
+						CreatedOnToolsVersion = 7.3.1;
+					};
+				};
+			};
+			buildConfigurationList = 47BA46E91D3C756F00975FEB /* Build configuration list for PBXProject "MiniLog" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 47BA46E51D3C756F00975FEB;
+			productRefGroup = 47BA46EF1D3C756F00975FEB /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				47BA46ED1D3C756F00975FEB /* MiniLog */,
+				47BA47031D3C776800975FEB /* MiniLogRun */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		47BA46EA1D3C756F00975FEB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				47BA46FE1D3C775000975FEB /* MiniLog.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		47BA47001D3C776800975FEB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				47BA470C1D3C77C700975FEB /* Main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		47BA46F71D3C756F00975FEB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = ../..;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		47BA46F81D3C756F00975FEB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = ../..;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		47BA46FA1D3C756F00975FEB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		47BA46FB1D3C756F00975FEB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		47BA47091D3C776800975FEB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		47BA470A1D3C776800975FEB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		47BA46E91D3C756F00975FEB /* Build configuration list for PBXProject "MiniLog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				47BA46F71D3C756F00975FEB /* Debug */,
+				47BA46F81D3C756F00975FEB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		47BA46F91D3C756F00975FEB /* Build configuration list for PBXNativeTarget "MiniLog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				47BA46FA1D3C756F00975FEB /* Debug */,
+				47BA46FB1D3C756F00975FEB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		47BA47081D3C776800975FEB /* Build configuration list for PBXNativeTarget "MiniLogRun" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				47BA47091D3C776800975FEB /* Debug */,
+				47BA470A1D3C776800975FEB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 47BA46E61D3C756F00975FEB /* Project object */;
+}

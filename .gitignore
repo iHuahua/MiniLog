@@ -243,18 +243,17 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
-/proj/xcode/MiniLog.xcodeproj/xcuserdata/huahua.xcuserdatad/xcschemes/xcschememanagement.plist
-/proj/xcode/MiniLog.xcodeproj/xcuserdata/huahua.xcuserdatad/xcschemes/MiniLogRun.xcscheme
-/proj/xcode/MiniLog.xcodeproj/xcuserdata/huahua.xcuserdatad/xcschemes/MiniLog.xcscheme
-/proj/xcode/MiniLog.xcodeproj/project.xcworkspace/xcuserdata/huahua.xcuserdatad/UserInterfaceState.xcuserstate
-/proj/xcode/MiniLog.xcodeproj/project.xcworkspace/contents.xcworkspacedata
-/proj/xcode/MiniLog.xcodeproj/project.pbxproj
-/proj/xcode.bak/MiniLog.xcodeproj/xcuserdata/huahua.xcuserdatad/xcschemes/xcschememanagement.plist
-/proj/xcode.bak/MiniLog.xcodeproj/xcuserdata/huahua.xcuserdatad/xcschemes/MiniLogRun.xcscheme
-/proj/xcode.bak/MiniLog.xcodeproj/xcuserdata/huahua.xcuserdatad/xcschemes/MiniLog.xcscheme
-/proj/xcode.bak/MiniLog.xcodeproj/project.xcworkspace/xcuserdata/huahua.xcuserdatad/UserInterfaceState.xcuserstate
-/proj/xcode.bak/MiniLog.xcodeproj/project.xcworkspace/contents.xcworkspacedata
-/proj/xcode.bak/MiniLog.xcodeproj/project.pbxproj
-将删除 ".\\bin/"
-将删除 .idea/
-将删除 MiniLog/.idea/
+
+# 编译目录
+build
+bin
+tmp
+
+# OS X's Finder creates these for state about opened windows/etc.
+**/.DS_Store
+# xcode 临时文件
+**/xcuserdata
+
+# Visual Studio Code Cache
+.vscode
+**/.vs

@@ -13,13 +13,14 @@
 
 
 void log_test() {
+	__MINILOG_NS__::IMiniLog::GetInstance()->SetLogPath(".");
     __MINILOG_NS__::IMiniLog::GetInstance()->Start();
 
 	LOGT("This is a TRACK message %d", 123);
 	LOGD("This is a DEBUG message %s", "fuck u");
 	LOGI("This is a INFO  message %0.03f", 123.0);
 	LOGW("This is a WARN  message");
-	LOGE("This is a ERROR message");
+    LOGE("This is a ERROR message");
     __MINILOG_NS__::IMiniLog::GetInstance()->Stop();
 }
 
