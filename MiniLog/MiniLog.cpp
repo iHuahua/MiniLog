@@ -13,6 +13,7 @@
 #include <vector>
 #include <deque>
 #include <thread>
+#include <mutex>
 #include <iomanip>
 #include "MiniLog.hpp"
 
@@ -56,8 +57,8 @@ static const char *MiniLogLevelString[] =
 #if defined(_WIN32)
 static const short MiniLogLevelColor[] =
 {
-    0,
-    0,
+	FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE,
+	FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE,
     FOREGROUND_GREEN,
     FOREGROUND_RED | FOREGROUND_GREEN,
     FOREGROUND_RED | FOREGROUND_INTENSITY
@@ -96,7 +97,7 @@ public:
         return string(message);
     }
 
-    static string GetCurrentTime(const char *fmt) {
+    static string GetCurrentTimeFMT(const char *fmt) {
         auto _time_point = GetCurrentTimePoint();
         time_t _time_now = system_clock::to_time_t(_time_point);
         struct tm *_tm = localtime(&_time_now);
@@ -177,7 +178,7 @@ public:
             return false;
         }
 
-        string now = Utility::GetCurrentTime("%Y%m%d-%H%M%S");
+        string now = Utility::GetCurrentTimeFMT("%Y%m%d-%H%M%S");
         string file = m_RootDirectory + PathSeparator + now + ".log";
         m_FStream.open(file, std::ios::out | std::ios::app);
 
@@ -206,11 +207,21 @@ public:
 class MiniLogTargetConsole : public IMiniLogTarget
 {
     const char *TAG = "MiniLog";
+#if defined(_WIN32)
+	uint16_t m_OldColor;
+	HANDLE m_ConsoleHND;
+#endif
 public:
     MiniLogTargetConsole(MiniLog * miniLog) : IMiniLogTarget(miniLog) {
     }
 
     virtual bool Start() override {
+#if defined(_WIN32)
+		m_ConsoleHND = ::GetStdHandle(STD_OUTPUT_HANDLE);
+		CONSOLE_SCREEN_BUFFER_INFO _bufferInfo;
+		GetConsoleScreenBufferInfo(m_ConsoleHND, &_bufferInfo);
+		m_OldColor = _bufferInfo.wAttributes;
+#endif
         return true;
     }
 
@@ -220,19 +231,28 @@ public:
 
     virtual bool ProcMessage(MiniMessage * msg) override {
         if (EnableColorConsole()) {
+#if defined(_WIN32)
+			SetConsoleTextAttribute(m_ConsoleHND, MiniLogLevelColor[msg->m_Level]);
+#else
             std::cout << MiniLogLevelColor[msg->m_Level];
+#endif
         }
 
         std::cout << msg->content << std::endl;
-#if defined(__WIN32)
-        OutputDebugStringA(msg->content.c_str());
+#if defined(_WIN32)
+		OutputDebugStringA(msg->content.c_str());
+		OutputDebugStringA("\n");
 #elif defined(__ANDROID__)
         __android_log_print(msg->m_Level + 2, TAG, msg->content.c_str());
-#endif
+#endif 
 
+#if defined(_WIN32)
+		SetConsoleTextAttribute(m_ConsoleHND, m_OldColor);
+#else
         if (EnableColorConsole()) {
             std::cout << "\e[0m";
         }
+#endif
 
         return true;
     }
